@@ -5,11 +5,11 @@
 #include "biophysical_fann_adapter.hpp"
 
 bool run_trial(double c_homeo, int trial_id) {
-    // LA CORRECTION : Une graine unique pour chaque essai
-    unsigned int seed = 1000 + trial_id; 
+    unsigned int seed_A = 1000 + trial_id;
+    unsigned int seed_B = 9000 + trial_id;
     
-    BiophysicalFannAdapter syn_A(1.0, c_homeo, seed);
-    BiophysicalFannAdapter syn_B(1.0, c_homeo, seed);
+    BiophysicalFannAdapter syn_A(1.0, c_homeo, seed_A);
+    BiophysicalFannAdapter syn_B(1.0, c_homeo, seed_B);
     
     const double dt = 0.001;
     const int steps = 25000; 
@@ -18,9 +18,9 @@ bool run_trial(double c_homeo, int trial_id) {
         double t = i * dt;
         double stim_A = 0.0, stim_B = 0.0;
         
-        if (t >= 2.0 && t < 2.2) stim_A = 1.5; // Train A
-        else if (t >= 8.0 && t < 8.2) stim_B = 1.5; // Train B
-        else if (t >= 15.0 && t < 20.0) stim_B = 1.5; // INTERFERENCE
+        if (t >= 2.0 && t < 2.2) stim_A = 1.5;
+        else if (t >= 8.0 && t < 8.2) stim_B = 1.5;
+        else if (t >= 15.0 && t < 20.0) stim_B = 1.5;
         
         double total_input = (stim_A * syn_A.get_weight()) + (stim_B * syn_B.get_weight());
         double post = (total_input > 0.8) ? 1.0 : 0.0;
@@ -29,7 +29,6 @@ bool run_trial(double c_homeo, int trial_id) {
         syn_B.update_synapse(stim_B, post, dt);
     }
     
-    // Test final de survie
     double stim_A = 0.5;
     double total_input = (stim_A * syn_A.get_weight());
     double post = (total_input > 0.8) ? 1.0 : 0.0;
@@ -38,7 +37,7 @@ bool run_trial(double c_homeo, int trial_id) {
 }
 
 int main() {
-    std::cout << "Test de Rupture (avec graines independantes)\n";
+    std::cout << "Test de Rupture (graines independantes A/B)\n";
     std::cout << "Force  | Taux de survie (sur 20 essais)\n";
     std::cout << "------------------------------------------------------\n";
     
@@ -47,12 +46,11 @@ int main() {
     for (double c : c_values) {
         int survie = 0;
         for (int trial = 0; trial < 20; ++trial) {
-            if (run_trial(c, trial)) survie++; // On passe le numéro de l'essai
+            if (run_trial(c, trial)) survie++;
         }
         std::cout << "  " << std::setw(3) << c << "  | " 
                   << std::setw(2) << survie << "/20 (" 
                   << (survie * 5) << "%)\n";
     }
-    
     return 0;
 }
