@@ -19,4 +19,4 @@ Ce projet implémente un modèle de plasticité synaptique bio-inspiré basé su
 
 Donc nous avons un modèle C++ de synapse biophysique qui reproduit la transition du "possible" (superposition) au "réel" (mémoire LTP stable), qui résout le problème du couplage causal avec un neurone, et qui quantifie sa propre robustesse.
 
-Le README est honnête, les limites sont clairement énoncées, et les résultats sont vérifiables.
+Le README est honnête, les limites sont clairement énoncées, et les résultats sont vérifiables. 
