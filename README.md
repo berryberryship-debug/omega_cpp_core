@@ -2,10 +2,17 @@
 
 Ce projet implémente un modèle de plasticité synaptique bio-inspiré basé sur la compétition enzymatique entre la CaMKII (Kinase) et la PP1 (Phosphatase), régulée par le verrou moléculaire de l'Inhibiteur-1 (I-1).
 
-## 📊 Résultats Clés
-1. **Bifurcation et Hystérésis** : Transition de phase nette (LTD vers LTP) à la concentration critique de calcium.
-2. **Intégration FANN Native** : Le modèle est couplé avec succès à la bibliothèque C `libfann`. Le poids synaptique biophysique pilote directement les connexions du réseau de neurones.
-3. **Seuil de Rupture Mesuré** : Le verrou résiste à une attaque homéostatique linéaire jusqu'à c=10 s^-1. Il ne cède qu'à une attaque massive sur la Kinase (f* ≈ 20 s^-1).
+## État de validation — réconciliation locale et branche publique
+
+La branche `main` n'est pas encore réconciliée avec la version locale exécutée sous Termux. Les modifications de l'interface de l'adaptateur et le protocole de test avec graines distinctes restent à intégrer et à compiler dans une copie propre du dépôt.
+
+Un balayage exploratoire de la force homéostatique c, de 5 à 30, est prévu sur 100 essais par valeur. Les résultats, les conditions d'exécution et les intervalles de confiance seront publiés après exécution effective et vérification.
+
+Aucun seuil critique ni aucune robustesse générale ne sont considérés comme établis avant cette validation.
+
+## 📊 Résultats Précédents (à titre indicatif)
+- **Bifurcation et Hystérésis** : Transition de phase nette (LTD vers LTP) à la concentration critique de calcium.
+- **Intégration FANN Native** : Le modèle est couplé avec succès à la bibliothèque C `libfann` (test de compilation réussi).
 
 ## 🛠️ Compilation et Exécution
 Nécessite `libfann-dev`.
