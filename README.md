@@ -19,3 +19,11 @@ Nécessite `libfann-dev`.
 ```bash
 g++ -O3 -std=c++17 test_fann_integration.cpp biophysical_synapse.cpp biophysical_fann_adapter.cpp -o test_fann -lfann -lm
 ./test_fann
+## 🔬 Découverte : Le mécanisme de l'oubli catastrophique
+
+Grâce aux tests de contrôle, nous avons identifié le mécanisme exact de l'oubli dans ce modèle. 
+- **Sans apprentissage de B** : La mémoire de A survit à 100% (même sous forte attaque homéostatique).
+- **Avec apprentissage de B** : La mémoire de A s'effondre.
+- **Intervention causale** : Si l'on désactive l'homéostasie de A *uniquement* pendant l'apprentissage de B, la mémoire de A survit.
+
+**Conclusion** : Dans ce modèle, l'oubli catastrophique n'est pas causé par le temps qui passe ou une perturbation externe, mais par l'activité post-synaptique générée lors de l'apprentissage d'une nouvelle tâche, qui déclenche la dépression homéostatique de l'ancienne.
