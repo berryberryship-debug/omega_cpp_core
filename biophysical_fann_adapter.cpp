@@ -1,8 +1,8 @@
 #include "biophysical_fann_adapter.hpp"
 #include <algorithm>
 
-BiophysicalFannAdapter::BiophysicalFannAdapter(double initial_weight, double homeo_force)
-    : synapse(initial_weight, 0.3, 0.3, homeo_force), current_Ca(Ca_basal) {}
+BiophysicalFannAdapter::BiophysicalFannAdapter(double initial_weight, double homeo_force, unsigned int seed)
+    : synapse(initial_weight, 0.3, 0.3, homeo_force, seed), current_Ca(Ca_basal) {}
 
 void BiophysicalFannAdapter::update_synapse(double pre_activity, double post_activity, double dt) {
     pre_activity = std::clamp(pre_activity, 0.0, 1.0);
