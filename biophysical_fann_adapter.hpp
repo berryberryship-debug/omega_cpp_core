@@ -10,7 +10,7 @@ private:
     double current_Ca;
 
 public:
-    explicit BiophysicalFannAdapter(double initial_weight = 1.0, double homeo_force = 0.3);
+    explicit BiophysicalFannAdapter(double initial_weight = 1.0, double homeo_force = 0.3, unsigned int seed = 12345);
     void update_synapse(double pre_activity, double post_activity, double dt);
     double get_weight() const;
     double get_Ca() const;
