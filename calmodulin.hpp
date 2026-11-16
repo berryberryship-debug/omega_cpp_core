@@ -1,79 +1,110 @@
-#ifndef OMEGA_V1_CALMODULIN_HPP
-#define OMEGA_V1_CALMODULIN_HPP
-
-#include <cstddef>
+#ifndef OMEGA_V1_CAMKII_HPP
+#define OMEGA_V1_CAMKII_HPP
 
 namespace omega::v1 {
 
-struct CaMState {
-    double M0;
-    double M2N;
-    double M2C;
+/// État de CaMKII couplé à la calmoduline libre M4.
+struct CaMKIIState {
+    /// CaMKII inactive.
+    double K0;
+
+    /// CaMKII liée à la calmoduline.
+    double KC;
+
+    /// Dimère de CaMKII.
+    double D;
+
+    /// CaMKII phosphorylée liée à la calmoduline.
+    double KpC;
+
+    /// CaMKII phosphorylée.
+    double Kp;
+
+    /// Calmoduline libre M4 disponible pour la liaison.
     double M4;
 };
 
-struct CaMParameters {
-    double kon_0N;
-    double koff_0N;
+/// Paramètres cinétiques du sous-modèle CaMKII.
+struct CaMKIIParameters {
+    /// Constante de liaison CaMKII–calmoduline.
+    double kon_bind;
 
-    double kon_0C;
-    double koff_0C;
+    /// Constante de dissociation du complexe CaMKII–calmoduline.
+    double koff_bind;
 
-    double kon_N4;
-    double koff_N4;
+    /// Constante de formation du dimère.
+    double kon_dimer;
 
-    double kon_C4;
-    double koff_C4;
+    /// Constante de dissociation du dimère.
+    double koff_dimer;
+
+    /// Constante de phosphorylation.
+    double k_phosphorylation;
+
+    /// Constante de dissociation de la calmoduline liée à CaMKII phosphorylée.
+    double koff_phospho_cam;
+
+    /// Constante de liaison de la calmoduline à CaMKII phosphorylée.
+    double kon_phospho_cam;
 };
 
-struct CaMFluxes {
-    double v_0N_forward;
-    double v_0N_reverse;
-
-    double v_0C_forward;
-    double v_0C_reverse;
-
-    double v_N4_forward;
-    double v_N4_reverse;
-
-    double v_C4_forward;
-    double v_C4_reverse;
-};
-
-struct CaMDerivative {
-    double M0;
-    double M2N;
-    double M2C;
+/// Dérivée temporelle de l’état CaMKII.
+struct CaMKIIDerivative {
+    double K0;
+    double KC;
+    double D;
+    double KpC;
+    double Kp;
     double M4;
 };
 
-void validate_calmodulin(
-    const CaMState& state,
-    double calcium,
-    const CaMParameters& parameters
+/// Flux élémentaires du sous-modèle CaMKII.
+struct CaMKIIRates {
+    /// Flux de liaison CaMKII–calmoduline.
+    double bind_forward;
+
+    /// Flux de dissociation du complexe CaMKII–calmoduline.
+    double bind_reverse;
+
+    /// Flux de formation du dimère.
+    double dimer_forward;
+
+    /// Flux de dissociation du dimère.
+    double dimer_reverse;
+
+    /// Flux de phosphorylation.
+    double phosphorylation;
+
+    /// Flux de dissociation de la calmoduline liée à CaMKII phosphorylée.
+    double phospho_cam_forward;
+
+    /// Flux de liaison de la calmoduline à CaMKII phosphorylée.
+    double phospho_cam_reverse;
+};
+
+/// Calcule les flux élémentaires de CaMKII.
+[[nodiscard]] CaMKIIRates calculate_camkii_rates(
+    const CaMKIIState& state,
+    const CaMKIIParameters& parameters
 );
 
-CaMFluxes calculate_fluxes(
-    const CaMState& state,
-    double calcium,
-    const CaMParameters& parameters
+/// Calcule la dérivée temporelle de l’état CaMKII.
+[[nodiscard]] CaMKIIDerivative calculate_camkii_derivative(
+    const CaMKIIState& state,
+    const CaMKIIParameters& parameters
 );
 
-CaMDerivative calculate_derivative(
-    const CaMState& state,
-    double calcium,
-    const CaMParameters& parameters
-);
+/// Calcule la quantité totale de sous-unités CaMKII.
+///
+/// Le dimère D compte pour deux sous-unités.
+[[nodiscard]] double total_camkii(const CaMKIIState& state);
 
-double total_calmodulin(const CaMState& state);
-
-void advance_calmodulin(
-    CaMState& state,
-    double calcium,
-    const CaMParameters& parameters,
-    double duration
+/// Valide l’état et les paramètres de CaMKII.
+void validate_camkii(
+    const CaMKIIState& state,
+    const CaMKIIParameters& parameters
 );
 
 } // namespace omega::v1
 
-#endif // OMEGA_V1_CALMODULIN_HPP
+#endif // OMEGA_V1_CAMKII_HPP
