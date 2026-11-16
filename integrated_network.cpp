@@ -3,76 +3,85 @@
 namespace omega::v1 {
 
 IntegratedDerivative calculate_integrated_derivative(
-    const IntegratedState& s,
-    const IntegratedParameters& p
+    const IntegratedState& state,
+    const IntegratedParameters& parameters
 ) {
-    const CaMKIIDerivative d_camkii =
-        calculate_camkii_derivative(s.camkii, p.camkii);
+    const CaMKIIDerivative camkii_rate =
+        calculate_camkii_derivative(
+            state.camkii,
+            parameters.camkii
+        );
 
-    const DephosphorylationState dephos_state{
-        s.PP1,
-        s.camkii.KpC,
-        s.camkii.KC,
-        s.PP1KpC
+    const DephosphorylationState dephosphorylation_state{
+        state.PP1,
+        state.camkii.KpC,
+        state.camkii.KC,
+        state.PP1KpC
     };
 
-    const DephosphorylationDerivative d_dephos =
+    const DephosphorylationDerivative dephosphorylation_rate =
         calculate_dephosphorylation_derivative(
-            dephos_state,
-            p.dephosphorylation
+            dephosphorylation_state,
+            parameters.dephosphorylation
         );
 
     const PP1I1State pp1_i1_state{
-        s.PP1,
-        s.I1,
-        s.I1p,
-        s.PP1I1p
+        state.PP1,
+        state.I1,
+        state.I1p,
+        state.PP1I1p
     };
 
-    const PP1I1Derivative d_pp1_i1 =
+    const PP1I1Derivative pp1_i1_rate =
         calculate_pp1_i1_derivative(
             pp1_i1_state,
-            p.pp1_i1,
-            p.pka_activity
+            parameters.pp1_i1,
+            parameters.pka_activity
         );
 
-    IntegratedDerivative out{
-        d_camkii,
-        0.0,
-        d_pp1_i1.I1,
-        d_pp1_i1.I1p,
-        d_pp1_i1.PP1I1p,
-        d_dephos.PP1KpC
+    IntegratedDerivative rate{
+        camkii_rate,
+        dephosphorylation_rate.PP1 + pp1_i1_rate.PP1,
+        pp1_i1_rate.I1,
+        pp1_i1_rate.I1p,
+        pp1_i1_rate.PP1I1p,
+        dephosphorylation_rate.PP1KpC
     };
 
-    out.camkii.KC += d_dephos.KC;
-    out.camkii.KpC += d_dephos.KpC;
+    // La déphosphorylation s’ajoute à la dynamique CaMKII pour les
+    // sous-unités KpC et KC.
+    rate.camkii.KpC += dephosphorylation_rate.KpC;
+    rate.camkii.KC += dephosphorylation_rate.KC;
 
-    // Un seul pool libre PP1, partagé entre les deux réactions.
-    out.PP1 = d_dephos.PP1 + d_pp1_i1.PP1;
-
-    return out;
+    return rate;
 }
 
-double total_integrated_camkii(const IntegratedState& s) {
-    return s.camkii.K0
-         + s.camkii.KC
-         + 2.0 * s.camkii.D
-         + s.camkii.KpC
-         + s.camkii.Kp
-         + s.PP1KpC;
+double total_integrated_camkii(const IntegratedState& state) {
+    const CaMKIIState& camkii = state.camkii;
+
+    // K0, KC, KpC et Kp comptent pour une sous-unité chacun.
+    // D représente un dimère et compte donc pour deux sous-unités.
+    // PP1KpC séquestre une sous-unité KpC.
+    return camkii.K0
+         + camkii.KC
+         + 2.0 * camkii.D
+         + camkii.KpC
+         + camkii.Kp
+         + state.PP1KpC;
 }
 
-double total_integrated_pp1(const IntegratedState& s) {
-    return s.PP1
-         + s.PP1KpC
-         + s.PP1I1p;
+double total_integrated_pp1(const IntegratedState& state) {
+    // PP1 est libre, lié à KpC dans PP1KpC, ou lié à I1p dans PP1I1p.
+    return state.PP1
+         + state.PP1KpC
+         + state.PP1I1p;
 }
 
-double total_integrated_i1(const IntegratedState& s) {
-    return s.I1
-         + s.I1p
-         + s.PP1I1p;
+double total_integrated_i1(const IntegratedState& state) {
+    // I1 est libre, phosphorylé sous I1p, ou lié à PP1 dans PP1I1p.
+    return state.I1
+         + state.I1p
+         + state.PP1I1p;
 }
 
 } // namespace omega::v1
