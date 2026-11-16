@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#ifndef OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
+#ifndef OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
 #define OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
 
 #include "../m2_camkii/camkii.hpp"
@@ -31,12 +28,14 @@ M2M3Derivative calculate_m2_m3_derivative(
     const M2M3Parameters& parameters
 );
 
-double total_m2_m3_camkii(const M2M3State& state);
-double total_m2_m3_pp1(const M2M3State& state);
+double total_m2_m3_camkii(
+    const M2M3State& state
+);
+
+double total_m2_m3_pp1(
+    const M2M3State& state
+);
 
 } // namespace omega::v1
 
-#endif
-'''
-
-Path("coupled_dephosphorylation.hpp").write_text(content, encoding="utf-8")
+#endif // OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
