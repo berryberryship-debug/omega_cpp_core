@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#ifndef OMEGA_V1_CAMKII_DEPHOSPHORYLATION_HPP
+#ifndef OMEGA_V1_CAMKII_DEPHOSPHORYLATION_HPP
 #define OMEGA_V1_CAMKII_DEPHOSPHORYLATION_HPP
 
 namespace omega::v1 {
@@ -57,7 +54,4 @@ void validate_dephosphorylation(
 
 } // namespace omega::v1
 
-#endif
-'''
-
-Path("camkii_dephosphorylation.hpp").write_text(content, encoding="utf-8")
+#endif // OMEGA_V1_CAMKII_DEPHOSPHORYLATION_HPP
