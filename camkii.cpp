@@ -1,4 +1,3 @@
-cat > camkii.cpp <<'EOF'
 #include "camkii.hpp"
 
 #include <cmath>
@@ -31,14 +30,17 @@ void validate_camkii(
     check_nonnegative(p.koff_bind, "Invalid koff_bind");
     check_nonnegative(p.kon_dimer, "Invalid kon_dimer");
     check_nonnegative(p.koff_dimer, "Invalid koff_dimer");
+
     check_nonnegative(
         p.k_phosphorylation,
         "Invalid k_phosphorylation"
     );
+
     check_nonnegative(
         p.koff_phospho_cam,
         "Invalid koff_phospho_cam"
     );
+
     check_nonnegative(
         p.kon_phospho_cam,
         "Invalid kon_phospho_cam"
@@ -77,7 +79,8 @@ CaMKIIDerivative calculate_camkii_derivative(
     const double Jdimer =
         r.dimer_forward - r.dimer_reverse;
 
-    const double Jphospho = r.phosphorylation;
+    const double Jphospho =
+        r.phosphorylation;
 
     const double Jphospho_cam =
         r.phospho_cam_forward - r.phospho_cam_reverse;
@@ -103,4 +106,3 @@ double total_camkii(const CaMKIIState& s) {
 }
 
 } // namespace omega::v1
-EOF
