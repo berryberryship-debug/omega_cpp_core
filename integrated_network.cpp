@@ -2,6 +2,24 @@
 
 namespace omega::v1 {
 
+// =====================================================================
+// PARAMÈTRES BIOLOGIQUES DE RÉFÉRENCE (Bhalla 2004 / Hayer 2005)
+// Utilise ces valeurs dans ton fichier principal (main.cpp) pour initialiser
+// ta structure de paramètres. Unités : µM et secondes.
+// =====================================================================
+namespace BiologicalConstants {
+    // Module M2 (CaMKII)
+    constexpr double CAMKII_KON_BIND = 1.27e-3; // µM^-1 s^-1
+    constexpr double CAMKII_KOFF_BIND = 0.07;   // s^-1
+    constexpr double CAMKII_K_PHOSPHO = 0.5;    // s^-1
+
+    // Module M3 (PP1 / Déphosphorylation)
+    constexpr double DEPHOS_KON = 1.0;          // µM^-1 s^-1
+    constexpr double DEPHOS_KOFF = 0.001;       // s^-1 (Attention, très petit)
+    constexpr double DEPHOS_KCAT = 0.41;        // s^-1
+}
+// =====================================================================
+
 IntegratedDerivative calculate_integrated_derivative(
     const IntegratedState& state,
     const IntegratedParameters& parameters
