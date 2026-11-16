@@ -1,0 +1,21 @@
+# Build directories
+build/
+bin/
+out/
+
+# Compiled Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+test_adapter
+test_fann_integration
+test_fann_mock
+test_homeostasie
+test_rupture
+
+# IDE files
+.vscode/
+.idea/
+*.swp
