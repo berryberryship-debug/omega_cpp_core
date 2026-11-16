@@ -1,177 +1,79 @@
+#ifndef OMEGA_V1_CALMODULIN_HPP
+#define OMEGA_V1_CALMODULIN_HPP
 
-from pathlib import Path
-
-content = r'''#include "calmodulin.hpp"
-#include <algorithm>
-
-#include <cmath>
-#include <stdexcept>
+#include <cstddef>
 
 namespace omega::v1 {
 
-namespace {
+struct CaMState {
+    double M0;
+    double M2N;
+    double M2C;
+    double M4;
+};
 
-void require_finite_nonnegative(double value, const char* name) {
-    if (!std::isfinite(value) || value < 0.0) {
-        throw std::invalid_argument(name);
-    }
-}
+struct CaMParameters {
+    double kon_0N;
+    double koff_0N;
 
-}
+    double kon_0C;
+    double koff_0C;
+
+    double kon_N4;
+    double koff_N4;
+
+    double kon_C4;
+    double koff_C4;
+};
+
+struct CaMFluxes {
+    double v_0N_forward;
+    double v_0N_reverse;
+
+    double v_0C_forward;
+    double v_0C_reverse;
+
+    double v_N4_forward;
+    double v_N4_reverse;
+
+    double v_C4_forward;
+    double v_C4_reverse;
+};
+
+struct CaMDerivative {
+    double M0;
+    double M2N;
+    double M2C;
+    double M4;
+};
 
 void validate_calmodulin(
-    const CaMState& s,
+    const CaMState& state,
     double calcium,
-    const CaMParameters& p
-) {
-    require_finite_nonnegative(s.M0, "Invalid M0");
-    require_finite_nonnegative(s.M2N, "Invalid M2N");
-    require_finite_nonnegative(s.M2C, "Invalid M2C");
-    require_finite_nonnegative(s.M4, "Invalid M4");
-
-    require_finite_nonnegative(calcium, "Invalid calcium");
-
-    require_finite_nonnegative(p.kon_0N, "Invalid kon_0N");
-    require_finite_nonnegative(p.koff_0N, "Invalid koff_0N");
-    require_finite_nonnegative(p.kon_0C, "Invalid kon_0C");
-    require_finite_nonnegative(p.koff_0C, "Invalid koff_0C");
-    require_finite_nonnegative(p.kon_N4, "Invalid kon_N4");
-    require_finite_nonnegative(p.koff_N4, "Invalid koff_N4");
-    require_finite_nonnegative(p.kon_C4, "Invalid kon_C4");
-    require_finite_nonnegative(p.koff_C4, "Invalid koff_C4");
-}
+    const CaMParameters& parameters
+);
 
 CaMFluxes calculate_fluxes(
-    const CaMState& s,
+    const CaMState& state,
     double calcium,
-    const CaMParameters& p
-) {
-    validate_calmodulin(s, calcium, p);
-
-    const double calcium_squared = calcium * calcium;
-
-    return {
-        p.kon_0N * calcium_squared * s.M0,
-        p.koff_0N * s.M2N,
-
-        p.kon_0C * calcium_squared * s.M0,
-        p.koff_0C * s.M2C,
-
-        p.kon_N4 * calcium_squared * s.M2N,
-        p.koff_N4 * s.M4,
-
-        p.kon_C4 * calcium_squared * s.M2C,
-        p.koff_C4 * s.M4
-    };
-}
+    const CaMParameters& parameters
+);
 
 CaMDerivative calculate_derivative(
-    const CaMState& s,
+    const CaMState& state,
     double calcium,
-    const CaMParameters& p
-) {
-    const CaMFluxes f = calculate_fluxes(s, calcium, p);
+    const CaMParameters& parameters
+);
 
-    return {
-        -f.v_0N_forward + f.v_0N_reverse
-        -f.v_0C_forward + f.v_0C_reverse,
-
-        f.v_0N_forward - f.v_0N_reverse
-        -f.v_N4_forward + f.v_N4_reverse,
-
-        f.v_0C_forward - f.v_0C_reverse
-        -f.v_C4_forward + f.v_C4_reverse,
-
-        f.v_N4_forward - f.v_N4_reverse
-        +f.v_C4_forward - f.v_C4_reverse
-    };
-}
-
-double total_calmodulin(const CaMState& s) {
-    require_finite_nonnegative(s.M0, "Invalid M0");
-    require_finite_nonnegative(s.M2N, "Invalid M2N");
-    require_finite_nonnegative(s.M2C, "Invalid M2C");
-    require_finite_nonnegative(s.M4, "Invalid M4");
-
-    return s.M0 + s.M2N + s.M2C + s.M4;
-}
-
-} // namespace omega::v1
-
-namespace omega::v1 {
+double total_calmodulin(const CaMState& state);
 
 void advance_calmodulin(
     CaMState& state,
     double calcium,
-    const CaMParameters& p,
+    const CaMParameters& parameters,
     double duration
-) {
-    validate_calmodulin(state, calcium, p);
-
-    if (!std::isfinite(duration) || duration <= 0.0) {
-        throw std::invalid_argument("Invalid integration duration");
-    }
-
-    const double c2 = calcium * calcium;
-
-    const double exit_M0 = (p.kon_0N + p.kon_0C) * c2;
-    const double exit_M2N = p.koff_0N + p.kon_N4 * c2;
-    const double exit_M2C = p.koff_0C + p.kon_C4 * c2;
-    const double exit_M4 = p.koff_N4 + p.koff_C4;
-
-    const double max_exit = std::max(
-        std::max(exit_M0, exit_M2N),
-        std::max(exit_M2C, exit_M4)
-    );
-
-    constexpr double safety = 0.90;
-    constexpr double max_substeps = 10000000.0;
-
-    const double required =
-        std::ceil(duration * max_exit / safety);
-
-    if (!std::isfinite(required) || required > max_substeps) {
-        throw std::runtime_error("Too many integration substeps");
-    }
-
-    const std::size_t steps =
-        static_cast<std::size_t>(std::max(1.0, required));
-
-    const double h = duration / static_cast<double>(steps);
-
-    CaMState next = state;
-
-    for (std::size_t i = 0; i < steps; ++i) {
-        const CaMDerivative d =
-            calculate_derivative(next, calcium, p);
-
-        CaMState candidate{
-            next.M0   + h * d.M0,
-            next.M2N  + h * d.M2N,
-            next.M2C  + h * d.M2C,
-            next.M4   + h * d.M4
-        };
-
-        if (!std::isfinite(candidate.M0) ||
-            !std::isfinite(candidate.M2N) ||
-            !std::isfinite(candidate.M2C) ||
-            !std::isfinite(candidate.M4) ||
-            candidate.M0 < 0.0 ||
-            candidate.M2N < 0.0 ||
-            candidate.M2C < 0.0 ||
-            candidate.M4 < 0.0) {
-            throw std::runtime_error(
-                "Positivity failure during integration"
-            );
-        }
-
-        next = candidate;
-    }
-
-    state = next;
-}
+);
 
 } // namespace omega::v1
-'''
 
-Path("calmodulin.cpp").write_text(content, encoding="utf-8")
+#endif // OMEGA_V1_CALMODULIN_HPP
