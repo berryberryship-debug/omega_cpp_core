@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#ifndef OMEGA_V1_PP1_I1_HPP
+#ifndef OMEGA_V1_PP1_I1_HPP
 #define OMEGA_V1_PP1_I1_HPP
 
 namespace omega::v1 {
@@ -56,6 +53,3 @@ void validate_pp1_i1(
 } // namespace omega::v1
 
 #endif
-'''
-
-Path("pp1_i1.hpp").write_text(content, encoding="utf-8")
