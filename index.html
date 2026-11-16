@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Omega V1 - Simulateur Interactif</title>
+    <!-- On utilise Chart.js pour les graphiques -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1e1e1e; color: white; padding: 20px; }
+        .controls { margin-bottom: 20px; display: flex; gap: 20px; }
+        .controls label { display: flex; flex-direction: column; }
+        canvas { background: #2d2d2d; border-radius: 8px; }
+        .invariants { margin-top: 20px; font-family: monospace; color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>Simulateur Biophysique Omega V1</h1>
+    
+    <div class="controls">
+        <label>
+            Amplitude Calcium (µM)
+            <input type="range" id="caAmp" min="0.1" max="10" step="0.1" value="2.0">
+            <span id="caAmpVal">2.0</span>
+        </label>
+        <label>
+            Durée (s)
+            <input type="range" id="duration" min="10" max="100" step="10" value="50">
+            <span id="durationVal">50</span>
+        </label>
+        <button onclick="runSimulation()" style="padding: 10px; cursor: pointer;">Lancer la simulation</button>
+    </div>
+
+    <canvas id="myChart" width="800" height="400"></canvas>
+    <div class="invariants" id="invariants"></div>
+
+    <!-- On importe ton moteur -->
+    <script type="module">
+        import { simulate, DEFAULT_PARAMS, DEFAULT_PROTOCOL } from './omegaModel.js';
+
+        let chart = null;
+
+        window.runSimulation = () => {
+            const caAmp = parseFloat(document.getElementById('caAmp').value);
+            const duration = parseFloat(document.getElementById('duration').value);
+
+            // Configuration du protocole
+            const protocol = { ...DEFAULT_PROTOCOL, amplitude: caAmp };
+            
+            // Lancement de ton simulateur
+            const result = simulate({ 
+                params: DEFAULT_PARAMS, 
+                protocol: protocol, 
+                duration: duration 
+            });
+
+            // Préparation des données pour le graphique
+            const labels = result.rows.map(r => r.t);
+            const caData = result.rows.map(r => r.ca);
+            const kpData = result.rows.map(r => r.Kp);
+            const pp1Data = result.rows.map(r => r.PP1);
+
+            // Affichage des invariants (preuve de conservation)
+            document.getElementById('invariants').innerHTML = 
+                `Invariants (doivent rester constants) :<br>` +
+                `CaM: ${result.invariants.cam.toFixed(4)} | ` +
+                `CaMKII: ${result.invariants.camkii.toFixed(4)} | ` +
+                `PP1: ${result.invariants.pp1.toFixed(4)} | ` +
+                `I1: ${result.invariants.i1.toFixed(4)}`;
+
+            // Création du graphique
+            if (chart) chart.destroy();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Calcium (µM)', data: caData, borderColor: 'cyan', borderWidth: 1, pointRadius: 0 },
+                        { label: 'CaMKII Active (Kp)', data: kpData, borderColor: 'yellow', borderWidth: 2, pointRadius: 0 },
+                        { label: 'PP1 Libre', data: pp1Data, borderColor: 'red', borderWidth: 2, pointRadius: 0 }
+                    ]
+                },
+                options: {
+                    responsive: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Temps (s)', color: 'white' }, ticks: { color: 'white' } },
+                        y: { title: { display: true, text: 'Concentration (µM)', color: 'white' }, ticks: { color: 'white' } }
+                    },
+                    plugins: { legend: { labels: { color: 'white' } } }
+                }
+            });
+        };
+
+        // Lancer une première fois au chargement
+        window.runSimulation();
+    </script>
+</body>
+</html>
