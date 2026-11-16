@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#ifndef OMEGA_V1_FULL_HPP
+#ifndef OMEGA_V1_FULL_HPP
 #define OMEGA_V1_FULL_HPP
 
 #include "../m1_calmodulin/calmodulin.hpp"
@@ -61,14 +58,22 @@ OmegaFullDerivative calculate_omega_full_derivative(
     const OmegaFullParameters& parameters
 );
 
-double total_omega_cam(const OmegaFullState& state);
-double total_omega_camkii(const OmegaFullState& state);
-double total_omega_pp1(const OmegaFullState& state);
-double total_omega_i1(const OmegaFullState& state);
+double total_omega_cam(
+    const OmegaFullState& state
+);
+
+double total_omega_camkii(
+    const OmegaFullState& state
+);
+
+double total_omega_pp1(
+    const OmegaFullState& state
+);
+
+double total_omega_i1(
+    const OmegaFullState& state
+);
 
 } // namespace omega::v1
 
-#endif
-'''
-
-Path("omega_full.hpp").write_text(content, encoding="utf-8")
+#endif // OMEGA_V1_FULL_HPP
