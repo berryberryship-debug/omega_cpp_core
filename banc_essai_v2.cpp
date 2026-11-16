@@ -11,10 +11,14 @@
 // - Les complexes sont explicites : PP1I1p et PP1KpC.
 // - Seule la PP1 libre est catalytiquement active.
 // - La déphosphorylation de Kp passe obligatoirement par PP1KpC.
+// - La déphosphorylation d'I-1p est modulée par l'activité calcineurine,
+//   elle-même dépendante du calcium.
+// - Le CaM trapping est représenté par une dissociation plus lente
+//   du CaM lié au CaMKII phosphorylé.
 
 export const K_EXCHANGE = 1.0; // échange Ca entre lobes C et N (s⁻¹)
 export const K_I1_PHOS = 2.0; // phosphorylation de I-1 par PKA (µM⁻¹·s⁻¹)
-export const K_I1_DEPHOS = 0.15; // déphosphorylation basale de I-1p (s⁻¹)
+export const K_I1_DEPHOS = 0.15; // déphosphorylation maximale de I-1p (s⁻¹)
 export const K_RECOVERY = 0.02; // D -> K0 (s⁻¹)
 
 export const TOTALS = {
@@ -33,7 +37,8 @@ export const DEFAULT_PARAMS = {
   },
   camkii: {
     konBind: 1.27e-3, // K0 + CaM active -> KC
-    koffBind: 0.07, // KC -> K0 ; KpC -> Kp
+    koffBind: 0.07, // KC -> K0
+    koffBoundPhosphorylated: 0.01, // KpC -> Kp, CaM trapping
     kPhosphorylation: 0.5, // KC -> KpC
   },
   dephosphorylation: {
@@ -46,6 +51,8 @@ export const DEFAULT_PARAMS = {
     koff: 0.001, // PP1I1p -> I1p + PP1
   },
   pkaActivity: 0.05, // µM
+  calcineurinCa50: 5.0, // µM
+  calcineurinHill: 2.0,
 };
 
 export const INITIAL_STATE = {
@@ -82,6 +89,20 @@ const MAX_INTERNAL_DT = 0.005; // s
 const clampNonNegative = (x) => (x > 0 ? x : 0);
 
 /**
+ * Activité calcineurine dépendante du calcium.
+ * Forme de Hill simple, bornée entre 0 et 1.
+ */
+function calcineurinActivity(ca, p) {
+  const ca50 = Math.max(p.calcineurinCa50, EPS);
+  const hill = Math.max(p.calcineurinHill, EPS);
+
+  const numerator = Math.pow(Math.max(ca, 0), hill);
+  const denominator = Math.pow(ca50, hill) + numerator;
+
+  return denominator > EPS ? numerator / denominator : 0;
+}
+
+/**
  * Entrée calcique.
  * Modes : constant | impulse | train
  */
@@ -95,13 +116,17 @@ export function calciumAt(t, p) {
   }
 
   if (p.mode === "impulse") {
-    return t < p.delay + p.width ? Math.max(p.amplitude, 0) : Math.max(p.basal, 0);
+    return t < p.delay + p.width
+      ? Math.max(p.amplitude, 0)
+      : Math.max(p.basal, 0);
   }
 
   const cycle = Math.max(p.period, p.width + 0.01);
   const phase = (t - p.delay) % cycle;
 
-  return phase < p.width ? Math.max(p.amplitude, 0) : Math.max(p.basal, 0);
+  return phase < p.width
+    ? Math.max(p.amplitude, 0)
+    : Math.max(p.basal, 0);
 }
 
 /**
@@ -125,7 +150,8 @@ function relax(s, a, b, ka, kb, dt) {
   }
 
   const equilibriumB = (ka / k) * total;
-  const nextB = equilibriumB + (s[b] - equilibriumB) * Math.exp(-k * dt);
+  const nextB =
+    equilibriumB + (s[b] - equilibriumB) * Math.exp(-k * dt);
 
   s[b] = clampNonNegative(nextB);
   s[a] = clampNonNegative(total - s[b]);
@@ -133,7 +159,7 @@ function relax(s, a, b, ka, kb, dt) {
 
 /**
  * A + B <-> C.
- * Solution exacte à l'équilibre, puis relaxation vers cet équilibre.
+ * Équilibre quadratique exact, puis relaxation vers cet équilibre.
  * Conserve A + B + C.
  */
 function bind(s, a, b, c, kf, kr, dt) {
@@ -158,29 +184,37 @@ function bind(s, a, b, c, kf, kr, dt) {
     const discriminant = Math.max(qb * qb - 4 * qa * qc, 0);
     const root = Math.sqrt(discriminant);
 
-    const lower = -c0;
-    const upper = Math.min(a0, b0);
-
     const r1 = (-qb + root) / (2 * qa);
     const r2 = (-qb - root) / (2 * qa);
 
-    const inRange = (x) => x >= lower - EPS && x <= upper + EPS;
+    // Bornes physiques :
+    // -c0 <= deltaComplex <= min(a0, b0)
+    const lower = -c0;
+    const upper = Math.min(a0, b0);
+
+    const inRange = (x) =>
+      x >= lower - EPS && x <= upper + EPS;
 
     if (inRange(r1)) {
       complexAtEquilibrium = r1;
     } else if (inRange(r2)) {
       complexAtEquilibrium = r2;
     } else {
-      complexAtEquilibrium = Math.min(Math.max(r2, lower), upper);
+      complexAtEquilibrium = Math.min(
+        Math.max(r2, lower),
+        upper,
+      );
     }
+  } else if (kr > EPS) {
+    // Sans association, le complexe ne peut que se dissocier.
+    complexAtEquilibrium = 0;
   }
 
-  // Concentrations libres à l'équilibre
-  const freeA = Math.max(a0 - complexAtEquilibrium, 0);
-  const freeB = Math.max(b0 - complexAtEquilibrium, 0);
+  // Concentrations libres actuelles, utilisées pour la relaxation.
+  const currentFreeA = Math.max(a0, 0);
+  const currentFreeB = Math.max(b0, 0);
 
-  // Relaxation vers l'équilibre
-  const forwardRate = kf * (freeA + freeB);
+  const forwardRate = kf * (currentFreeA + currentFreeB);
   const k = forwardRate + kr;
 
   if (k <= EPS) {
@@ -188,7 +222,8 @@ function bind(s, a, b, c, kf, kr, dt) {
   }
 
   const nextComplex =
-    complexAtEquilibrium + (c0 - complexAtEquilibrium) * Math.exp(-k * dt);
+    complexAtEquilibrium +
+    (c0 - complexAtEquilibrium) * Math.exp(-k * dt);
 
   const shift = clampNonNegative(nextComplex) - c0;
 
@@ -217,6 +252,10 @@ function transfer(s, from, to, k, dt) {
  * Un pas de simulation, avec sous-pas internes si dt est trop grand.
  */
 export function step(s, p, ca, dt) {
+  if (!Number.isFinite(dt) || dt <= 0) {
+    return;
+  }
+
   const substeps = Math.max(1, Math.ceil(dt / MAX_INTERNAL_DT));
   const h = dt / substeps;
 
@@ -232,23 +271,65 @@ function stepOnce(s, p, ca, dt) {
   // M1 — Calmoduline
   // M0 <-> M2C <-> M4 <-> M2N <-> M0
   // ---------------------------------------------------------------
-  relax(s, "M0", "M2C", p.calmodulin.kon2 * c2, p.calmodulin.koff2, dt);
-  relax(s, "M2C", "M4", p.calmodulin.kon1 * c2, p.calmodulin.koff1, dt);
-  relax(s, "M4", "M2N", p.calmodulin.koff2, p.calmodulin.kon2 * c2, dt);
-  relax(s, "M2N", "M0", p.calmodulin.koff1, p.calmodulin.kon1 * c2, dt);
-  relax(s, "M2C", "M2N", K_EXCHANGE, K_EXCHANGE, dt);
+  relax(
+    s,
+    "M0",
+    "M2C",
+    p.calmodulin.kon2 * c2,
+    p.calmodulin.koff2,
+    dt,
+  );
+
+  relax(
+    s,
+    "M2C",
+    "M4",
+    p.calmodulin.kon1 * c2,
+    p.calmodulin.koff1,
+    dt,
+  );
+
+  relax(
+    s,
+    "M4",
+    "M2N",
+    p.calmodulin.koff2,
+    p.calmodulin.kon2 * c2,
+    dt,
+  );
+
+  relax(
+    s,
+    "M2N",
+    "M0",
+    p.calmodulin.koff1,
+    p.calmodulin.kon1 * c2,
+    dt,
+  );
+
+  relax(
+    s,
+    "M2C",
+    "M2N",
+    K_EXCHANGE,
+    K_EXCHANGE,
+    dt,
+  );
 
   // ---------------------------------------------------------------
   // M3 — Inhibition de PP1 par I-1p
   // I1 <-> I1p
   // I1p + PP1 <-> PP1I1p
   // ---------------------------------------------------------------
+  const i1DephosphorylationRate =
+    K_I1_DEPHOS * calcineurinActivity(ca, p);
+
   relax(
     s,
     "I1",
     "I1p",
     K_I1_PHOS * p.pkaActivity,
-    K_I1_DEPHOS,
+    i1DephosphorylationRate,
     dt,
   );
 
@@ -279,8 +360,21 @@ function stepOnce(s, p, ca, dt) {
     dt,
   );
 
-  transfer(s, "KC", "KpC", p.camkii.kPhosphorylation, dt);
-  transfer(s, "KpC", "Kp", p.camkii.koffBind, dt);
+  transfer(
+    s,
+    "KC",
+    "KpC",
+    p.camkii.kPhosphorylation,
+    dt,
+  );
+
+  transfer(
+    s,
+    "KpC",
+    "Kp",
+    p.camkii.koffBoundPhosphorylated,
+    dt,
+  );
 
   // ---------------------------------------------------------------
   // Déphosphorylation explicite
@@ -299,7 +393,8 @@ function stepOnce(s, p, ca, dt) {
 
   if (s.PP1KpC > EPS) {
     const dephosphorylated =
-      s.PP1KpC * (1 - Math.exp(-p.dephosphorylation.kcat * dt));
+      s.PP1KpC *
+      (1 - Math.exp(-p.dephosphorylation.kcat * dt));
 
     s.PP1KpC = clampNonNegative(s.PP1KpC - dephosphorylated);
     s.PP1 = clampNonNegative(s.PP1 + dephosphorylated);
@@ -316,10 +411,36 @@ function stepOnce(s, p, ca, dt) {
 export function invariantsOf(s) {
   return {
     cam: s.M0 + s.M2N + s.M2C + s.M4,
-    camkii: s.K0 + s.KC + s.D + s.KpC + s.Kp + s.PP1KpC,
+    camkii:
+      s.K0 +
+      s.KC +
+      s.D +
+      s.KpC +
+      s.Kp +
+      s.PP1KpC,
     pp1: s.PP1 + s.PP1I1p + s.PP1KpC,
     i1: s.I1 + s.I1p + s.PP1I1p,
   };
+}
+
+function assertInvariants(s, tolerance = 1e-6) {
+  const invariants = invariantsOf(s);
+
+  const checks = [
+    ["cam", invariants.cam, TOTALS.cam],
+    ["camkii", invariants.camkii, TOTALS.camkii],
+    ["pp1", invariants.pp1, TOTALS.pp1],
+    ["i1", invariants.i1, TOTALS.i1],
+  ];
+
+  for (const [name, value, expected] of checks) {
+    if (Math.abs(value - expected) > tolerance) {
+      throw new Error(
+        `Violation de l'invariant ${name} : ` +
+        `${value} au lieu de ${expected}.`,
+      );
+    }
+  }
 }
 
 export function simulate({
@@ -328,6 +449,8 @@ export function simulate({
   duration,
   dt = 0.01,
   maxPoints = 520,
+  initialState = INITIAL_STATE,
+  checkInvariants = false,
 }) {
   if (!Number.isFinite(duration) || duration <= 0) {
     throw new Error("duration doit être un nombre positif.");
@@ -337,41 +460,51 @@ export function simulate({
     throw new Error("dt doit être un nombre positif.");
   }
 
-  const s = { ...INITIAL_STATE };
-  const steps = Math.max(1, Math.round(duration / dt));
-  const stride = Math.max(1, Math.ceil(steps / maxPoints));
+  if (!Number.isInteger(maxPoints) || maxPoints <= 0) {
+    throw new Error("maxPoints doit être un entier positif.");
+  }
+
+  const s = { ...INITIAL_STATE, ...initialState };
   const rows = [];
 
-  const push = (t) => {
+  let t = 0;
+  let stepsTaken = 0;
+
+  const push = (time) => {
     rows.push({
-      t: Math.round(t * 1000) / 1000,
-      ca: calciumAt(t, protocol),
+      t: Math.round(time * 1000) / 1000,
+      ca: calciumAt(time, protocol),
       ...s,
     });
   };
 
   push(0);
 
-  for (let i = 1; i <= steps; i += 1) {
-    const tPrevious = (i - 1) * dt;
-    const ca = calciumAt(tPrevious, protocol);
+  const approxSteps = Math.ceil(duration / dt);
+  const stride = Math.max(1, Math.ceil(approxSteps / maxPoints));
 
-    step(s, params, ca, dt);
+  while (t < duration - 1e-9) {
+    const h = Math.min(dt, duration - t);
+    const ca = calciumAt(t, protocol);
 
-    if (i % stride === 0) {
-      push(i * dt);
+    step(s, params, ca, h);
+
+    t += h;
+    stepsTaken += 1;
+
+    if (checkInvariants) {
+      assertInvariants(s);
     }
-  }
 
-  const last = rows[rows.length - 1];
-
-  if (last.t < duration - 1e-9) {
-    push(duration);
+    if (stepsTaken % stride === 0 || t >= duration - 1e-9) {
+      push(t);
+    }
   }
 
   return {
     rows,
     duration,
+    stepsTaken,
     invariants: invariantsOf(s),
   };
 }
