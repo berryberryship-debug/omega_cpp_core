@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#include "coupled_dephosphorylation.hpp"
+#include "coupled_dephosphorylation.hpp"
 
 namespace omega::v1 {
 
@@ -9,7 +6,7 @@ M2M3Derivative calculate_m2_m3_derivative(
     const M2M3State& s,
     const M2M3Parameters& p
 ) {
-    const auto d2 =
+    const CaMKIIDerivative d2 =
         calculate_camkii_derivative(s.camkii, p.camkii);
 
     const DephosphorylationState dstate{
@@ -19,7 +16,7 @@ M2M3Derivative calculate_m2_m3_derivative(
         s.PP1KpC
     };
 
-    const auto d3 =
+    const DephosphorylationDerivative d3 =
         calculate_dephosphorylation_derivative(
             dstate,
             p.dephosphorylation
@@ -50,6 +47,3 @@ double total_m2_m3_pp1(const M2M3State& s) {
 }
 
 } // namespace omega::v1
-'''
-
-Path("coupled_dephosphorylation.cpp").write_text(content, encoding="utf-8")
