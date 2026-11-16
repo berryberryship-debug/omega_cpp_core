@@ -1,3 +1,4 @@
+cat > biophysical_fann_adapter.hpp <<'EOF'
 #ifndef BIOPHYSICAL_FANN_ADAPTER_HPP
 #define BIOPHYSICAL_FANN_ADAPTER_HPP
 
@@ -6,10 +7,8 @@
 class BiophysicalFannAdapter {
 private:
     BiophysicalSynapse synapse;
-
     double current_Ca;
 
-    // Dynamique calcique de l'interface FANN → synapse
     static constexpr double Ca_basal = 0.10;
     static constexpr double alpha_Ca = 1.00;
     static constexpr double tau_Ca = 0.050;
@@ -18,7 +17,8 @@ public:
     BiophysicalFannAdapter(
         double initial_weight,
         double homeo_force,
-        unsigned int seed
+        unsigned int seed,
+        bool use_noise = true
     );
 
     void update_synapse(
@@ -31,6 +31,8 @@ public:
     double get_Ca() const;
     double get_K() const;
     double get_P() const;
+    double get_I() const;
 };
 
-#endif // BIOPHYSICAL_FANN_ADAPTER_HPP
+#endif
+EOF
