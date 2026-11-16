@@ -3,59 +3,69 @@
 namespace omega::v1 {
 
 CoupledDerivative calculate_coupled_derivative(
-    const CoupledState& s,
+    const CoupledState& state,
     double calcium,
-    const CoupledParameters& p
+    const CoupledParameters& parameters
 ) {
     // M1 : évolution de la calmoduline libre.
-    const CaMDerivative dm1 =
-        calculate_derivative(s.cam, calcium, p.cam);
+    const CaMDerivative calmodulin_rate =
+        calculate_derivative(
+            state.cam,
+            calcium,
+            parameters.cam
+        );
 
     // M2 : M4 est lu depuis M1, sans seconde copie persistante.
     const CaMKIIState kinase{
-        s.K0,
-        s.KC,
-        s.D,
-        s.KpC,
-        s.Kp,
-        s.cam.M4
+        state.K0,
+        state.KC,
+        state.D,
+        state.KpC,
+        state.Kp,
+        state.cam.M4
     };
 
-    const CaMKIIDerivative dm2 =
-        calculate_camkii_derivative(kinase, p.camkii);
+    const CaMKIIDerivative kinase_rate =
+        calculate_camkii_derivative(
+            kinase,
+            parameters.camkii
+        );
 
     return {
-        dm1,
-        dm2.K0,
-        dm2.KC,
-        dm2.D,
-        dm2.KpC,
-        dm2.Kp,
-        dm1.M4 + dm2.M4
+        calmodulin_rate,
+        kinase_rate.K0,
+        kinase_rate.KC,
+        kinase_rate.D,
+        kinase_rate.KpC,
+        kinase_rate.Kp,
+        calmodulin_rate.M4 + kinase_rate.M4
     };
 }
 
-double total_coupled_camkii(const CoupledState& s) {
+double total_coupled_camkii(const CoupledState& state) {
     const CaMKIIState kinase{
-        s.K0,
-        s.KC,
-        s.D,
-        s.KpC,
-        s.Kp,
-        s.cam.M4
+        state.K0,
+        state.KC,
+        state.D,
+        state.KpC,
+        state.Kp,
+        state.cam.M4
     };
 
     return total_camkii(kinase);
 }
 
-double total_coupled_calmodulin(const CoupledState& s) {
-    return s.cam.M0
-         + s.cam.M2N
-         + s.cam.M2C
-         + s.cam.M4
-         + s.KC
-         + 2.0 * s.D
-         + s.KpC;
+double total_coupled_calmodulin(const CoupledState& state) {
+    // M0, M2N, M2C et M4 sont des formes libres de calmoduline.
+    // KC et KpC contiennent chacun une calmoduline liée.
+    // D est un dimère et contient donc deux calmodulines liées.
+    return state.cam.M0
+         + state.cam.M2N
+         + state.cam.M2C
+         + state.cam.M4
+         + state.KC
+         + 2.0 * state.D
+         + state.KpC;
 }
 
 } // namespace omega::v1
