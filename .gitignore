@@ -1,21 +1,62 @@
-# Build directories
+# Dossiers de compilation
 build/
+build-*/
+cmake-build-*/
 bin/
 out/
 
-# Compiled Object files
+# Fichiers objets
 *.o
 *.obj
 
-# Executables
+# Bibliothèques compilées
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Exécutables et fichiers de débogage
 *.exe
+*.pdb
+*.ilk
+*.dSYM/
+
+# Exécutable par défaut
+a.out
+
+# Exécutables de tests historiques
 test_adapter
 test_fann_integration
 test_fann_mock
 test_homeostasie
 test_rupture
 
-# IDE files
+# Fichiers générés par CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+compile_commands.json
+
+# Rapports de couverture
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+
+# Configuration locale des éditeurs
 .vscode/
 .idea/
+
+# Fichiers temporaires des éditeurs
 *.swp
+*.swo
+*~
+
+# Fichiers système
+.DS_Store
+Thumbs.db
