@@ -85,4 +85,7 @@ double total_omega_cam(const OmegaFullState& s) {
          + s.cam.M4
          + s.camkii.KC
          + 2.0 * s.camkii.D
-         + s.ca
+         + s.camkii.KpC; // KpC contient de la calmoduline liée. s.ca a été retiré.
+}
+
+} // namespace omega::v1
