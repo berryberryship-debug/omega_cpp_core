@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#include "integrated_network.hpp"
+#include "integrated_network.hpp"
 
 namespace omega::v1 {
 
@@ -9,7 +6,7 @@ IntegratedDerivative calculate_integrated_derivative(
     const IntegratedState& s,
     const IntegratedParameters& p
 ) {
-    const auto d_camkii =
+    const CaMKIIDerivative d_camkii =
         calculate_camkii_derivative(s.camkii, p.camkii);
 
     const DephosphorylationState dephos_state{
@@ -19,7 +16,7 @@ IntegratedDerivative calculate_integrated_derivative(
         s.PP1KpC
     };
 
-    const auto d_dephos =
+    const DephosphorylationDerivative d_dephos =
         calculate_dephosphorylation_derivative(
             dephos_state,
             p.dephosphorylation
@@ -32,7 +29,7 @@ IntegratedDerivative calculate_integrated_derivative(
         s.PP1I1p
     };
 
-    const auto d_pp1_i1 =
+    const PP1I1Derivative d_pp1_i1 =
         calculate_pp1_i1_derivative(
             pp1_i1_state,
             p.pp1_i1,
@@ -67,14 +64,15 @@ double total_integrated_camkii(const IntegratedState& s) {
 }
 
 double total_integrated_pp1(const IntegratedState& s) {
-    return s.PP1 + s.PP1KpC + s.PP1I1p;
+    return s.PP1
+         + s.PP1KpC
+         + s.PP1I1p;
 }
 
 double total_integrated_i1(const IntegratedState& s) {
-    return s.I1 + s.I1p + s.PP1I1p;
+    return s.I1
+         + s.I1p
+         + s.PP1I1p;
 }
 
 } // namespace omega::v1
-'''
-
-Path("integrated_network.cpp").write_text(content, encoding="utf-8")
