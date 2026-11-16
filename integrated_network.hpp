@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#ifndef OMEGA_V1_INTEGRATED_NETWORK_HPP
+#ifndef OMEGA_V1_INTEGRATED_NETWORK_HPP
 #define OMEGA_V1_INTEGRATED_NETWORK_HPP
 
 #include "../m2_camkii/camkii.hpp"
@@ -40,13 +37,18 @@ IntegratedDerivative calculate_integrated_derivative(
     const IntegratedParameters& parameters
 );
 
-double total_integrated_camkii(const IntegratedState& state);
-double total_integrated_pp1(const IntegratedState& state);
-double total_integrated_i1(const IntegratedState& state);
+double total_integrated_camkii(
+    const IntegratedState& state
+);
+
+double total_integrated_pp1(
+    const IntegratedState& state
+);
+
+double total_integrated_i1(
+    const IntegratedState& state
+);
 
 } // namespace omega::v1
 
-#endif
-'''
-
-Path("integrated_network.hpp").write_text(content, encoding="utf-8")
+#endif // OMEGA_V1_INTEGRATED_NETWORK_HPP
