@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#include "camkii_dephosphorylation.hpp"
+#include "camkii_dephosphorylation.hpp"
 
 #include <cmath>
 #include <stdexcept>
@@ -9,12 +6,13 @@ content = r'''#include "camkii_dephosphorylation.hpp"
 namespace omega::v1 {
 namespace {
 
-void check_nonnegative(double x, const char* name) {
-    if (!std::isfinite(x) || x < 0.0)
+void check_nonnegative(double value, const char* name) {
+    if (!std::isfinite(value) || value < 0.0) {
         throw std::invalid_argument(name);
+    }
 }
 
-}
+} // namespace
 
 void validate_dephosphorylation(
     const DephosphorylationState& s,
@@ -47,7 +45,8 @@ DephosphorylationDerivative calculate_dephosphorylation_derivative(
     const DephosphorylationState& s,
     const DephosphorylationParameters& p
 ) {
-    const auto r = calculate_dephosphorylation_rates(s, p);
+    const DephosphorylationRates r =
+        calculate_dephosphorylation_rates(s, p);
 
     const double Jassociation = r.association;
     const double Jdissociation = r.dissociation;
@@ -66,6 +65,7 @@ double total_dephosphorylation_pp1(
 ) {
     check_nonnegative(s.PP1, "Invalid PP1");
     check_nonnegative(s.PP1KpC, "Invalid PP1KpC");
+
     return s.PP1 + s.PP1KpC;
 }
 
@@ -75,10 +75,8 @@ double total_dephosphorylation_camkii(
     check_nonnegative(s.KpC, "Invalid KpC");
     check_nonnegative(s.KC, "Invalid KC");
     check_nonnegative(s.PP1KpC, "Invalid PP1KpC");
+
     return s.KpC + s.KC + s.PP1KpC;
 }
 
 } // namespace omega::v1
-'''
-
-Path("camkii_dephosphorylation.cpp").write_text(content, encoding="utf-8")
