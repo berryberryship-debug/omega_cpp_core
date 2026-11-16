@@ -1,6 +1,6 @@
 # Omega C++ Core : Synapse Biophysique à Verrou CaMKII/I-1
 
-Ce projet implémente un modèle de plasticité synaptique bio-inspiré basé sur la compétition enzymatique entre la CaMKII (Kinase) et la PP1 (Phosphatase), régulée par le verrou moléculaire de l'Inhibiteur-1 (I-1).
+Ce projet implémente loin d'être ai point, sera un modèle de plasticité synaptique bio-inspiré basé sur la compétition enzymatique entre la CaMKII (Kinase) et la PP1 (Phosphatase), régulée par le verrou moléculaire de l'Inhibiteur-1 (I-1).
 
 ## 🔬 Découverte : Le mécanisme de l'oubli catastrophique
 
