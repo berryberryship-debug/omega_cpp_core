@@ -1,5 +1,4 @@
-#ifndef OMEGA_V1_CAMKII_HPP
-#define OMEGA_V1_CAMKII_HPP
+#pragma once
 
 namespace omega::v1 {
 
@@ -106,5 +105,3 @@ void validate_camkii(
 );
 
 } // namespace omega::v1
-
-#endif // OMEGA_V1_CAMKII_HPP
