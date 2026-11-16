@@ -1,49 +1,68 @@
-#include "coupled_dephosphorylation.hpp"
+#ifndef OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
+#define OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
+
+#include "../m2_camkii/camkii.hpp"
+#include "../m3_camkii_dephosphorylation/camkii_dephosphorylation.hpp"
 
 namespace omega::v1 {
 
-M2M3Derivative calculate_m2_m3_derivative(
-    const M2M3State& s,
-    const M2M3Parameters& p
-) {
-    const CaMKIIDerivative d2 =
-        calculate_camkii_derivative(s.camkii, p.camkii);
+/// État du modèle couplé CaMKII–PP1.
+///
+/// Les concentrations sont supposées exprimées dans la même unité que
+/// les sous-modèles CaMKII et déphosphorylation, généralement en µM.
+struct M2M3State {
+    /// État CaMKII : formes inactives, actives, phosphorylées et complexes.
+    CaMKIIState camkii;
 
-    const DephosphorylationState dstate{
-        s.PP1,
-        s.camkii.KpC,
-        s.camkii.KC,
-        s.PP1KpC
-    };
+    /// PP1 libre.
+    double PP1;
 
-    const DephosphorylationDerivative d3 =
-        calculate_dephosphorylation_derivative(
-            dstate,
-            p.dephosphorylation
-        );
+    /// Complexe PP1–KpC.
+    double PP1KpC;
+};
 
-    M2M3Derivative out{d2, 0.0, 0.0};
+/// Dérivée temporelle de l’état du modèle couplé.
+struct M2M3Derivative {
+    /// Dérivée des variables CaMKII.
+    CaMKIIDerivative camkii;
 
-    out.camkii.KC += d3.KC;
-    out.camkii.KpC += d3.KpC;
+    /// Dérivée de la concentration de PP1 libre.
+    double PP1;
 
-    out.PP1 = d3.PP1;
-    out.PP1KpC = d3.PP1KpC;
+    /// Dérivée de la concentration du complexe PP1–KpC.
+    double PP1KpC;
+};
 
-    return out;
-}
+/// Paramètres des deux sous-modèles couplés.
+struct M2M3Parameters {
+    /// Paramètres de la dynamique CaMKII.
+    CaMKIIParameters camkii;
 
-double total_m2_m3_camkii(const M2M3State& s) {
-    return s.camkii.K0
-         + s.camkii.KC
-         + 2.0 * s.camkii.D
-         + s.camkii.KpC
-         + s.camkii.Kp
-         + s.PP1KpC;
-}
+    /// Paramètres de la dynamique de déphosphorylation.
+    DephosphorylationParameters dephosphorylation;
+};
 
-double total_m2_m3_pp1(const M2M3State& s) {
-    return s.PP1 + s.PP1KpC;
-}
+/// Calcule la dérivée temporelle du système couplé CaMKII–PP1.
+///
+/// La dynamique CaMKII fournit les variations de KpC et KC. La
+/// déphosphorylation modifie ensuite KpC, KC, PP1 et PP1KpC. Les
+/// contributions des deux sous-modèles sont donc additionnées pour KpC
+/// et KC.
+[[nodiscard]] M2M3Derivative calculate_m2_m3_derivative(
+    const M2M3State& state,
+    const M2M3Parameters& parameters
+);
+
+/// Calcule la quantité totale conservée des espèces associées à CaMKII.
+///
+/// Le complexe PP1KpC est inclus car il séquestre une sous-unité KpC.
+[[nodiscard]] double total_m2_m3_camkii(const M2M3State& state);
+
+/// Calcule la quantité totale conservée de PP1.
+///
+/// PP1 existe sous forme libre ou liée à KpC dans le complexe PP1KpC.
+[[nodiscard]] double total_m2_m3_pp1(const M2M3State& state);
 
 } // namespace omega::v1
+
+#endif // OMEGA_V1_COUPLED_DEPHOSPHORYLATION_HPP
