@@ -1,7 +1,4 @@
-
-from pathlib import Path
-
-content = r'''#include "omega_full.hpp"
+#include "omega_full.hpp"
 
 namespace omega::v1 {
 
@@ -9,9 +6,12 @@ OmegaFullDerivative calculate_omega_full_derivative(
     const OmegaFullState& s,
     const OmegaFullParameters& p
 ) {
-    const auto d_cam = calculate_derivative(
-        s.cam, p.calcium, p.calmodulin
-    );
+    const CaMDerivative d_cam =
+        calculate_derivative(
+            s.cam,
+            p.calcium,
+            p.calmodulin
+        );
 
     // M4 libre provient exclusivement du pool M1.
     const CaMKIIState kinase_state{
@@ -23,8 +23,11 @@ OmegaFullDerivative calculate_omega_full_derivative(
         s.cam.M4
     };
 
-    const auto d_kinase =
-        calculate_camkii_derivative(kinase_state, p.camkii);
+    const CaMKIIDerivative d_kinase =
+        calculate_camkii_derivative(
+            kinase_state,
+            p.camkii
+        );
 
     const DephosphorylationState dephos_state{
         s.PP1,
@@ -33,18 +36,24 @@ OmegaFullDerivative calculate_omega_full_derivative(
         s.PP1KpC
     };
 
-    const auto d_dephos =
+    const DephosphorylationDerivative d_dephos =
         calculate_dephosphorylation_derivative(
-            dephos_state, p.dephosphorylation
+            dephos_state,
+            p.dephosphorylation
         );
 
     const PP1I1State pp1_i1_state{
-        s.PP1, s.I1, s.I1p, s.PP1I1p
+        s.PP1,
+        s.I1,
+        s.I1p,
+        s.PP1I1p
     };
 
-    const auto d_pp1_i1 =
+    const PP1I1Derivative d_pp1_i1 =
         calculate_pp1_i1_derivative(
-            pp1_i1_state, p.pp1_i1, p.pka_activity
+            pp1_i1_state,
+            p.pp1_i1,
+            p.pka_activity
         );
 
     OmegaFullDerivative out{
@@ -63,33 +72,17 @@ OmegaFullDerivative calculate_omega_full_derivative(
         d_dephos.PP1KpC
     };
 
-    // Échange de CaM libre avec CaMKII :
-    // liaison K0 + M4 -> KC et dissociation KpC -> Kp + M4.
+    // Contribution nette de M2 au pool de M4 libre.
     out.cam.M4 += d_kinase.M4;
 
     return out;
 }
 
 double total_omega_cam(const OmegaFullState& s) {
-    return s.cam.M0 + s.cam.M2N + s.cam.M2C + s.cam.M4
-         + s.camkii.KC + 2.0 * s.camkii.D
-         + s.camkii.KpC + s.PP1KpC;
-}
-
-double total_omega_camkii(const OmegaFullState& s) {
-    return s.camkii.K0 + s.camkii.KC + 2.0 * s.camkii.D
-         + s.camkii.KpC + s.camkii.Kp + s.PP1KpC;
-}
-
-double total_omega_pp1(const OmegaFullState& s) {
-    return s.PP1 + s.PP1I1p + s.PP1KpC;
-}
-
-double total_omega_i1(const OmegaFullState& s) {
-    return s.I1 + s.I1p + s.PP1I1p;
-}
-
-} // namespace omega::v1
-'''
-
-Path("omega_full.cpp").write_text(content, encoding="utf-8")
+    return s.cam.M0
+         + s.cam.M2N
+         + s.cam.M2C
+         + s.cam.M4
+         + s.camkii.KC
+         + 2.0 * s.camkii.D
+         + s.ca
