@@ -1,79 +1,54 @@
-#include "pp1_i1.hpp"
-
-#include <cmath>
-#include <stdexcept>
+#pragma once
 
 namespace omega::v1 {
-namespace {
 
-void check_nonnegative(double x, const char* name) {
-    if (!std::isfinite(x) || x < 0.0) {
-        throw std::invalid_argument(name);
-    }
-}
+// Ordre des membres important : omega_full.cpp initialise par accolades
+// dans l'ordre PP1, I1, I1p, PP1I1p.
+struct PP1I1State {
+    double PP1 = 0.0;
+    double I1 = 0.0;
+    double I1p = 0.0;
+    double PP1I1p = 0.0;
+};
 
-} // namespace
+struct PP1I1Parameters {
+    double k_phosphorylation = 0.0;
+    double kon_inhibition = 0.0;
+    double koff_inhibition = 0.0;
+};
+
+struct PP1I1Rates {
+    double phosphorylation = 0.0;
+    double inhibition_forward = 0.0;
+    double inhibition_reverse = 0.0;
+};
+
+struct PP1I1Derivative {
+    double PP1 = 0.0;
+    double I1 = 0.0;
+    double I1p = 0.0;
+    double PP1I1p = 0.0;
+};
 
 void validate_pp1_i1(
-    const PP1I1State& s,
-    const PP1I1Parameters& p,
-    double pka
-) {
-    check_nonnegative(s.PP1, "Invalid PP1");
-    check_nonnegative(s.I1, "Invalid I1");
-    check_nonnegative(s.I1p, "Invalid I1p");
-    check_nonnegative(s.PP1I1p, "Invalid PP1I1p");
-
-    check_nonnegative(p.k_phosphorylation, "Invalid k_phosphorylation");
-    check_nonnegative(p.kon_inhibition, "Invalid kon_inhibition");
-    check_nonnegative(p.koff_inhibition, "Invalid koff_inhibition");
-    check_nonnegative(pka, "Invalid PKA activity");
-}
+    const PP1I1State& state,
+    const PP1I1Parameters& parameters,
+    double pka_activity
+);
 
 PP1I1Rates calculate_pp1_i1_rates(
-    const PP1I1State& s,
-    const PP1I1Parameters& p,
-    double pka
-) {
-    validate_pp1_i1(s, p, pka);
-
-    return {
-        p.k_phosphorylation * pka * s.I1,
-        p.kon_inhibition * s.PP1 * s.I1p,
-        p.koff_inhibition * s.PP1I1p
-    };
-}
+    const PP1I1State& state,
+    const PP1I1Parameters& parameters,
+    double pka_activity
+);
 
 PP1I1Derivative calculate_pp1_i1_derivative(
-    const PP1I1State& s,
-    const PP1I1Parameters& p,
-    double pka
-) {
-    const auto r = calculate_pp1_i1_rates(s, p, pka);
+    const PP1I1State& state,
+    const PP1I1Parameters& parameters,
+    double pka_activity
+);
 
-    const double Jphos = r.phosphorylation;
-    const double Jinhib =
-        r.inhibition_forward - r.inhibition_reverse;
-
-    return {
-        -Jinhib,
-        -Jphos,
-        Jphos - Jinhib,
-        Jinhib
-    };
-}
-
-double total_pp1(const PP1I1State& s) {
-    check_nonnegative(s.PP1, "Invalid PP1");
-    check_nonnegative(s.PP1I1p, "Invalid PP1I1p");
-    return s.PP1 + s.PP1I1p;
-}
-
-double total_i1(const PP1I1State& s) {
-    check_nonnegative(s.I1, "Invalid I1");
-    check_nonnegative(s.I1p, "Invalid I1p");
-    check_nonnegative(s.PP1I1p, "Invalid PP1I1p");
-    return s.I1 + s.I1p + s.PP1I1p;
-}
+double total_pp1(const PP1I1State& state);
+double total_i1(const PP1I1State& state);
 
 } // namespace omega::v1
