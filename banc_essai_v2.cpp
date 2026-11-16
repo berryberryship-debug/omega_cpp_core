@@ -159,8 +159,19 @@ function relax(s, a, b, ka, kb, dt) {
 
 /**
  * A + B <-> C.
- * Équilibre quadratique exact, puis relaxation vers cet équilibre.
- * Conserve A + B + C.
+ *
+ * Ici, a0, b0 et c0 sont les concentrations des espèces libres A et B,
+ * et du complexe C.
+ *
+ * Conservations :
+ *   A_total = a0 + c0
+ *   B_total = b0 + c0
+ *
+ * À l'équilibre :
+ *   kf (A_total - C)(B_total - C) = kr C
+ *
+ * La fonction résout donc directement pour C, la concentration absolue
+ * du complexe à l'équilibre.
  */
 function bind(s, a, b, c, kf, kr, dt) {
   const a0 = s[a];
@@ -172,28 +183,34 @@ function bind(s, a, b, c, kf, kr, dt) {
     return;
   }
 
-  // Équilibre : kf (Afree)(Bfree) = kr C
-  // Avec x = C : kf (a0 - x)(b0 - x) = kr (c0 + x)
+  const totalA = a0 + c0;
+  const totalB = b0 + c0;
+
   let complexAtEquilibrium = c0;
 
   if (kf > EPS) {
     const qa = kf;
-    const qb = -(kf * (a0 + b0) + kr);
-    const qc = kf * a0 * b0 - kr * c0;
 
-    const discriminant = Math.max(qb * qb - 4 * qa * qc, 0);
+    // kf (totalA - C)(totalB - C) = kr C
+    // kf C² - [kf(totalA + totalB) + kr] C + kf totalA totalB = 0
+    const qb = -(kf * (totalA + totalB) + kr);
+    const qc = kf * totalA * totalB;
+
+    const discriminant = Math.max(
+      qb * qb - 4 * qa * qc,
+      0,
+    );
+
     const root = Math.sqrt(discriminant);
 
     const r1 = (-qb + root) / (2 * qa);
     const r2 = (-qb - root) / (2 * qa);
 
-    // Bornes physiques :
-    // -c0 <= deltaComplex <= min(a0, b0)
-    const lower = -c0;
-    const upper = Math.min(a0, b0);
+    // Physiquement : 0 <= C <= min(totalA, totalB)
+    const upper = Math.min(totalA, totalB);
 
     const inRange = (x) =>
-      x >= lower - EPS && x <= upper + EPS;
+      x >= -EPS && x <= upper + EPS;
 
     if (inRange(r1)) {
       complexAtEquilibrium = r1;
@@ -201,7 +218,7 @@ function bind(s, a, b, c, kf, kr, dt) {
       complexAtEquilibrium = r2;
     } else {
       complexAtEquilibrium = Math.min(
-        Math.max(r2, lower),
+        Math.max(r2, 0),
         upper,
       );
     }
@@ -423,21 +440,21 @@ export function invariantsOf(s) {
   };
 }
 
-function assertInvariants(s, tolerance = 1e-6) {
-  const invariants = invariantsOf(s);
+function assertInvariants(s, expected, tolerance = 1e-6) {
+  const current = invariantsOf(s);
 
   const checks = [
-    ["cam", invariants.cam, TOTALS.cam],
-    ["camkii", invariants.camkii, TOTALS.camkii],
-    ["pp1", invariants.pp1, TOTALS.pp1],
-    ["i1", invariants.i1, TOTALS.i1],
+    ["cam", current.cam, expected.cam],
+    ["camkii", current.camkii, expected.camkii],
+    ["pp1", current.pp1, expected.pp1],
+    ["i1", current.i1, expected.i1],
   ];
 
-  for (const [name, value, expected] of checks) {
-    if (Math.abs(value - expected) > tolerance) {
+  for (const [name, value, target] of checks) {
+    if (Math.abs(value - target) > tolerance) {
       throw new Error(
         `Violation de l'invariant ${name} : ` +
-        `${value} au lieu de ${expected}.`,
+        `${value} au lieu de ${target}.`,
       );
     }
   }
@@ -465,6 +482,9 @@ export function simulate({
   }
 
   const s = { ...INITIAL_STATE, ...initialState };
+
+  const expectedInvariants = invariantsOf(s);
+
   const rows = [];
 
   let t = 0;
@@ -493,7 +513,7 @@ export function simulate({
     stepsTaken += 1;
 
     if (checkInvariants) {
-      assertInvariants(s);
+      assertInvariants(s, expectedInvariants);
     }
 
     if (stepsTaken % stride === 0 || t >= duration - 1e-9) {
