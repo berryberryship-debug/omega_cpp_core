@@ -6,7 +6,13 @@ cat > biophysical_synapse.hpp <<'EOF'
 
 class BiophysicalSynapse {
 private:
-    double W, K, P, I, homeo_force;
+    double W;
+    double K;
+    double P;
+    double I;
+    double homeo_force;
+    double sigma_noise;
+
     bool use_noise;
 
     std::mt19937 gen;
@@ -20,7 +26,6 @@ private:
     static constexpr double tau_k = 1.00;
     static constexpr double tau_p = 1.00;
 
-    static constexpr double sigma_noise = 0.01;
     static constexpr double eta_k = 0.10;
     static constexpr double eta_p = 0.10;
 
@@ -34,7 +39,8 @@ public:
         double init_P,
         double homeo_f,
         unsigned int seed_val,
-        bool noise_enabled = true
+        bool noise_enabled = true,
+        double noise_sigma = 0.01
     );
 
     void update(double Ca, double post_activity, double dt);
