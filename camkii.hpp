@@ -1,6 +1,3 @@
-cd ~/axiomes_base_labs_v8/omega_v1/m2_camkii || exit 1
-
-cat > camkii.hpp <<'EOF'
 #ifndef OMEGA_V1_CAMKII_HPP
 #define OMEGA_V1_CAMKII_HPP
 
@@ -69,5 +66,4 @@ void validate_camkii(
 
 } // namespace omega::v1
 
-#endif
-EOF
+#endif // OMEGA_V1_CAMKII_HPP
