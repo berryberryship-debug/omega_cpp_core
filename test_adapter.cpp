@@ -1,12 +1,13 @@
+
 #include <iostream>
 #include <iomanip>
 #include "biophysical_fann_adapter.hpp"
 
 int main() {
-    BiophysicalFannAdapter synapse(1.0);
+    BiophysicalFannAdapter synapse(1.0, 0.5, 42);
 
-    const double dt = 0.001;       // 1 ms
-    const int steps = 20000;       // 20 secondes
+    const double dt = 0.001;
+    const int steps = 20000;
 
     std::cout << std::fixed << std::setprecision(4);
     std::cout << "t (s) | Ca    | K     | P     | I     | W\n";
@@ -17,7 +18,6 @@ int main() {
         double pre = 0.0;
         double post = 0.0;
 
-        // Impulsion de 100 ms à t=2.0s (Haute Fréquence)
         if (t >= 2.0 && t < 2.1) {
             pre = 1.0;
             post = 1.0;
@@ -25,15 +25,16 @@ int main() {
 
         synapse.update_synapse(pre, post, dt);
 
-        // Affichage autour du pic et ensuite toutes les 2 secondes
-        if ((t >= 1.9 && t <= 2.5 && i % 50 == 0) || (i % 2000 == 0)) {
-            std::cout << std::setw(5) << t << " | " 
+        if ((t >= 1.9 && t <= 2.5 && i % 50 == 0)
+            || (i % 2000 == 0)) {
+
+            std::cout << std::setw(5) << t << " | "
                       << std::setw(5) << synapse.get_Ca() << " | "
                       << std::setw(5) << synapse.get_K() << " | "
                       << std::setw(5) << synapse.get_P() << " | "
-                      // On affiche pas I pour l'instant car pas d'accesseur, 
-                      // mais on peut le déduire de P
-                      << std::setw(5) << synapse.get_weight() << "\n";
+                      << std::setw(5) << synapse.get_I() << " | "
+                      << std::setw(5) << synapse.get_weight()
+                      << "\n";
         }
     }
 
