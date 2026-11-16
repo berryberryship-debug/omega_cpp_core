@@ -6,11 +6,7 @@ cat > biophysical_synapse.hpp <<'EOF'
 
 class BiophysicalSynapse {
 private:
-    double W;
-    double K;
-    double P;
-    double I;
-    double homeo_force;
+    double W, K, P, I, homeo_force;
     bool use_noise;
 
     std::mt19937 gen;
