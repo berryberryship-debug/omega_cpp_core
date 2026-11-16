@@ -6,49 +6,93 @@
 
 namespace omega::v1 {
 
+/// État du système couplé calmoduline–CaMKII.
+///
+/// La calmoduline libre M4 est stockée uniquement dans cam.M4. Elle est
+/// lue par le sous-modèle CaMKII, mais n’est pas dupliquée dans l’état
+/// couplé.
 struct CoupledState {
+    /// État de la calmoduline, incluant la forme libre M4.
     CaMState cam;
 
-    // La calmoduline libre M4 est stockée uniquement dans cam.M4.
+    /// Concentration de CaMKII inactive.
     double K0;
+
+    /// Concentration de CaMKII liée à la calmoduline.
     double KC;
+
+    /// Concentration du dimère de CaMKII.
     double D;
+
+    /// Concentration de CaMKII phosphorylée liée à la calmoduline.
     double KpC;
+
+    /// Concentration de CaMKII phosphorylée.
     double Kp;
 };
 
+/// Paramètres des sous-modèles calmoduline et CaMKII.
 struct CoupledParameters {
+    /// Paramètres de la dynamique de la calmoduline.
     CaMParameters cam;
+
+    /// Paramètres de la dynamique de CaMKII.
     CaMKIIParameters camkii;
 };
 
+/// Dérivée temporelle de l’état du système couplé.
 struct CoupledDerivative {
-    // Contribution du module M1 aux états de calmoduline libre.
+    /// Dérivée des états de calmoduline produits par le module M1.
     CaMDerivative cam;
 
+    /// Dérivée de la concentration de CaMKII inactive.
     double K0;
+
+    /// Dérivée de la concentration de CaMKII liée à la calmoduline.
     double KC;
+
+    /// Dérivée de la concentration du dimère de CaMKII.
     double D;
+
+    /// Dérivée de la concentration de CaMKII phosphorylée liée à la
+    /// calmoduline.
     double KpC;
+
+    /// Dérivée de la concentration de CaMKII phosphorylée.
     double Kp;
 
-    // Dérivée totale de M4 : contribution M1 + contribution M2.
-    // Pour mettre à jour state.cam.M4, utiliser M4_total,
-    // et non cam.M4 ; ne pas additionner les deux.
+    /// Dérivée totale de la calmoduline libre M4.
+    ///
+    /// Elle combine la contribution du module M1 et celle du module M2.
+    /// Pour mettre à jour state.cam.M4, utiliser M4_total ; ne pas
+    /// additionner cam.M4 et M4_total.
     double M4_total;
 };
 
-CoupledDerivative calculate_coupled_derivative(
+/// Calcule la dérivée temporelle du système couplé calmoduline–CaMKII.
+///
+/// Le module M1 détermine l’évolution de la calmoduline, dont la forme
+/// libre M4 est utilisée par le module M2. La dérivée totale de M4 est
+/// la somme des contributions de M1 et M2.
+[[nodiscard]] CoupledDerivative calculate_coupled_derivative(
     const CoupledState& state,
     double calcium,
     const CoupledParameters& parameters
 );
 
-double total_coupled_camkii(
+/// Calcule la quantité totale des espèces associées à CaMKII.
+///
+/// Le dimère D compte pour deux sous-unités. Les complexes KC et KpC
+/// séquestrent chacun une sous-unité et sont donc inclus dans le total.
+[[nodiscard]] double total_coupled_camkii(
     const CoupledState& state
 );
 
-double total_coupled_calmodulin(
+/// Calcule la quantité totale de calmoduline.
+///
+/// La calmoduline libre M4, les formes M0, M2N et M2C, ainsi que la
+/// calmoduline liée aux espèces CaMKII KC, D et KpC sont incluses.
+[[nodiscard]] double total_coupled_calmodulin(
     const CoupledState& state
 );
 
