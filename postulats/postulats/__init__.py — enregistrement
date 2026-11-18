@@ -1,0 +1,11 @@
+from . import camkii  # (… et tes autres postulats)
+
+REGISTRE = {
+    # "young": young,
+    # "action": action,
+    # "bose": bose,
+    # "a2": a2,
+    # "tore": tore,
+    # "mevem": mevem,
+    "camkii": camkii,
+}
