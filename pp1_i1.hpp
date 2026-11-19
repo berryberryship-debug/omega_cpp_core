@@ -15,10 +15,14 @@ struct PP1I1Parameters {
     double k_phosphorylation = 0.0;
     double kon_inhibition = 0.0;
     double koff_inhibition = 0.0;
+
+    // Déphosphorylation : I1p -> I1
+    double k_dephosphorylation = 0.0;
 };
 
 struct PP1I1Rates {
     double phosphorylation = 0.0;
+    double dephosphorylation = 0.0;
     double inhibition_forward = 0.0;
     double inhibition_reverse = 0.0;
 };
